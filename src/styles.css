@@ -186,3 +186,11 @@
 .rich-text-content b, .rich-text-content strong { font-weight: 700; }
 .rich-text-content i, .rich-text-content em { font-style: italic; }
 .rich-text-content u { text-decoration: underline; }
+
+.tiptap-contact p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: oklch(0.64 0.025 65);
+}
