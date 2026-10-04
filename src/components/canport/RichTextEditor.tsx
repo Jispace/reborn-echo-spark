@@ -91,7 +91,7 @@ function ColorPicker({
   title: string;
   icon: React.ComponentType<{ className?: string }>;
   colors: string[];
-  current?: string;
+  current?: string | undefined;
   onPick: (color: string | null) => void;
 }) {
   return (
@@ -235,14 +235,14 @@ function Toolbar({ editor }: { editor: Editor }) {
         title="Couleur du texte"
         icon={Baseline}
         colors={TEXT_COLORS}
-        current={editor.getAttributes('textStyle').color as string | undefined}
+        current={editor.getAttributes('textStyle')['color'] as string | undefined}
         onPick={(c) => (c ? editor.chain().focus().setColor(c).run() : editor.chain().focus().unsetColor().run())}
       />
       <ColorPicker
         title="Surlignage"
         icon={Highlighter}
         colors={HIGHLIGHT_COLORS}
-        current={editor.getAttributes('highlight').color as string | undefined}
+        current={editor.getAttributes('highlight')['color'] as string | undefined}
         onPick={(c) => (c ? editor.chain().focus().setHighlight({ color: c }).run() : editor.chain().focus().unsetHighlight().run())}
       />
 
