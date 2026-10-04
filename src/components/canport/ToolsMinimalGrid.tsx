@@ -28,49 +28,49 @@ const mainTools: ToolItem[] = [
     id: 'gmail',
     name: 'Gmail',
     renderLogo: () => (
-      <img src={gmailLogo.url} alt="Gmail" loading="lazy" decoding="async" className={squareLogoClass} />
+      <img src={gmailLogo} alt="Gmail" loading="lazy" decoding="async" className={squareLogoClass} />
     ),
   },
   {
     id: 'outlook',
     name: 'Outlook',
     renderLogo: () => (
-      <img src={outlookLogo.url} alt="Outlook" loading="lazy" decoding="async" className={squareLogoClass} />
+      <img src={outlookLogo} alt="Outlook" loading="lazy" decoding="async" className={squareLogoClass} />
     ),
   },
   {
     id: 'calendar',
     name: 'Google Calendar',
     renderLogo: () => (
-      <img src={googleCalendarLogo.url} alt="Google Calendar" loading="lazy" decoding="async" className={squareLogoClass} />
+      <img src={googleCalendarLogo} alt="Google Calendar" loading="lazy" decoding="async" className={squareLogoClass} />
     ),
   },
   {
     id: 'sheets',
     name: 'Google Sheets',
     renderLogo: () => (
-      <img src={googleSheetsLogo.url} alt="Google Sheets" loading="lazy" decoding="async" className={squareLogoClass} />
+      <img src={googleSheetsLogo} alt="Google Sheets" loading="lazy" decoding="async" className={squareLogoClass} />
     ),
   },
   {
     id: 'excel',
     name: 'Microsoft Excel',
     renderLogo: () => (
-      <img src={excelLogo.url} alt="Microsoft Excel" loading="lazy" decoding="async" className={squareLogoClass} />
+      <img src={excelLogo} alt="Microsoft Excel" loading="lazy" decoding="async" className={squareLogoClass} />
     ),
   },
   {
     id: 'notion',
     name: 'Notion',
     renderLogo: () => (
-      <img src={notionLogo.url} alt="Notion" loading="lazy" decoding="async" className={squareLogoClass} />
+      <img src={notionLogo} alt="Notion" loading="lazy" decoding="async" className={squareLogoClass} />
     ),
   },
   {
     id: 'canva',
     name: 'Canva',
     renderLogo: () => (
-      <img src={canvaLogo.url} alt="Canva" loading="lazy" decoding="async" className={wordmarkLogoClass} />
+      <img src={canvaLogo} alt="Canva" loading="lazy" decoding="async" className={wordmarkLogoClass} />
     ),
   },
   {
@@ -91,21 +91,21 @@ const mainTools: ToolItem[] = [
     id: 'hubspot',
     name: 'HubSpot',
     renderLogo: () => (
-      <img src={hubspotLogo.url} alt="HubSpot" loading="lazy" decoding="async" className={wordmarkLogoClass} />
+      <img src={hubspotLogo} alt="HubSpot" loading="lazy" decoding="async" className={wordmarkLogoClass} />
     ),
   },
   {
     id: 'chatgpt',
     name: 'ChatGPT',
     renderLogo: () => (
-      <img src={chatgptLogo.url} alt="ChatGPT" loading="lazy" decoding="async" className={squareLogoClass} />
+      <img src={chatgptLogo} alt="ChatGPT" loading="lazy" decoding="async" className={squareLogoClass} />
     ),
   },
   {
     id: 'claude',
     name: 'Claude',
     renderLogo: () => (
-      <img src={claudeLogo.url} alt="Claude" loading="lazy" decoding="async" className={wordmarkLogoClass} />
+      <img src={claudeLogo} alt="Claude" loading="lazy" decoding="async" className={wordmarkLogoClass} />
     ),
   },
   {
