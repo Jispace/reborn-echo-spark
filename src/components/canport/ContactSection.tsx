@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { portfolioProfile, servicePlans, getCalendlyUrl } from '../../data/portfolioData';
 import { Mail, Calendar, Linkedin, Send, CheckCircle2, ChevronDown, ExternalLink } from 'lucide-react';
-import { ContactMessageEditor } from './ContactMessageEditor';
+import { RichTextEditor } from './RichTextEditor';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
@@ -26,8 +26,11 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onOpenBooking })
     role: '',
     needs: '',
   });
+  const [needsHtml, setNeedsHtml] = useState('');
+  const [botcheck, setBotcheck] = useState(false);
+  const [sending, setSending] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setValidationAttempted(true);
     const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim());
@@ -38,8 +41,41 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onOpenBooking })
         : 'Veuillez saisir une adresse email valide.');
       return;
     }
-    // Sending cannot be confirmed until a verified sender domain is connected.
-    setErrorMessage("L’envoi automatique n’est pas encore disponible. Merci d’utiliser l’adresse e-mail directe en attendant.");
+    if (sending) return;
+    setErrorMessage('');
+    setSending(true);
+    try {
+      const res = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          access_key: '71970cbe-cfc9-4f26-b667-b6f6f2803dcc',
+          subject: `Nouveau message de ${formData.name.trim()} (${selectedPlan})`,
+          from_name: 'Portfolio Candya R.',
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          formule: selectedPlan,
+          activite: formData.role.trim(),
+          message: formData.needs,
+          message_html: needsHtml,
+          botcheck,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.status === 200 && data?.success) {
+        setSubmitted(true);
+        setFormData({ name: '', email: '', role: '', needs: '' });
+        setNeedsHtml('');
+        setSelectedPlan('');
+        setValidationAttempted(false);
+      } else {
+        setErrorMessage(data?.message || "L’envoi a échoué. Veuillez réessayer ou utiliser l’email direct.");
+      }
+    } catch {
+      setErrorMessage("Connexion impossible. Veuillez réessayer ou utiliser l’email direct.");
+    } finally {
+      setSending(false);
+    }
   };
 
   const calendlyUrlWithPlan = getCalendlyUrl(selectedPlan, {
@@ -357,13 +393,26 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onOpenBooking })
                       </label>
                     </div>
 
-                    <ContactMessageEditor
-                      value={formData.needs}
+                    <RichTextEditor
+                      id="contact-needs"
+                      value={needsHtml}
                       invalid={needsInvalid}
-                      onChange={(needs) => {
-                        setFormData((prev) => ({ ...prev, needs }));
-                        if (needs.trim() && errorMessage) setErrorMessage('');
+                      placeholder="Gestion des emails, retard de facturation, suivi des clients..."
+                      onChange={(html, text) => {
+                        setNeedsHtml(html);
+                        setFormData((prev) => ({ ...prev, needs: text }));
+                        if (text && errorMessage) setErrorMessage('');
                       }}
+                    />
+                    <input
+                      type="checkbox"
+                      name="botcheck"
+                      className="hidden"
+                      style={{ display: 'none' }}
+                      tabIndex={-1}
+                      autoComplete="off"
+                      checked={botcheck}
+                      onChange={(e) => setBotcheck(e.target.checked)}
                     />
 
                     {errorMessage && (
@@ -376,10 +425,12 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onOpenBooking })
                   <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
                     <Button
                       type="submit"
+                      disabled={sending}
+                      aria-busy={sending}
                       className="w-full sm:flex-1 py-3.5 px-6 rounded-full bg-[#2D241E] hover:bg-[#3E3228] active:scale-95 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm hover:shadow-lg transition-all cursor-pointer disabled:cursor-wait disabled:opacity-70"
                     >
                        
-                       <span>Envoyer mon message</span>
+                      <span>{sending ? 'Envoi en cours…' : 'Envoyer mon message'}</span>
                       <Send className="w-3.5 h-3.5 text-[#E0A97E]" />
                     </Button>
                     <a
