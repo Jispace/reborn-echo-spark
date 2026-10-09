@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep desktop project-selector animation inside ProjectsSection and gated at 640px; measured tab edges and a desktop-only trailing runway allow three-copy loops without changing mobile touch behavior.

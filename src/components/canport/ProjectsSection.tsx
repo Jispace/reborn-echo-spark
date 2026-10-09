@@ -268,6 +268,9 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({ onOpenBooking 
             );
           })
           )}
+          {/* Desktop runway lets the next copy's first tab reach the left edge
+              even when one complete copy is narrower than the viewport. */}
+          <div aria-hidden="true" className="hidden sm:block sm:w-full sm:shrink-0" />
           </div>
           <Button type="button" variant="outline" size="icon" onClick={() => selectAdjacentProject(1)} aria-label="Projet suivant" className="hidden sm:inline-flex shrink-0 rounded-full border-[#DED3C5] bg-white text-[#4A3F35] shadow-sm hover:bg-[#F3EDE4]">
             <ChevronRight />

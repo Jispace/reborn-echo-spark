@@ -20,7 +20,7 @@ describe('Desktop project selector', () => {
       media: query, onchange: null, addListener() {}, removeListener() {},
       addEventListener() {}, removeEventListener() {}, dispatchEvent: () => true,
     }));
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
       const copy = this.dataset['copy'];
       const index = projectsData.findIndex(p => p.id === this.dataset['projectId']);
       const left = copy === undefined ? 0 : (Number(copy) * 4 + index) * 300 - (this.parentElement?.scrollLeft ?? 0);
