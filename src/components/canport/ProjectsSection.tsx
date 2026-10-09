@@ -164,10 +164,18 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({ onOpenBooking 
     };
     align(desktopSelectorInitialized.current);
     const onResize = () => align(false);
+    const observer = new ResizeObserver(onResize);
+    observer.observe(selector);
+    selector.querySelectorAll<HTMLElement>('[data-copy="1"]').forEach(tab => observer.observe(tab));
+    const initialFrame = requestAnimationFrame(() => {
+      if (desktop.matches && !desktopSelectorInitialized.current) align(false);
+    });
     window.addEventListener('resize', onResize);
     desktop.addEventListener('change', onResize);
     return () => {
       cancelAnimationFrame(frame);
+      cancelAnimationFrame(initialFrame);
+      observer.disconnect();
       window.removeEventListener('resize', onResize);
       desktop.removeEventListener('change', onResize);
     };
