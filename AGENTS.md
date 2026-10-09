@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Keep the desktop project selector in ProjectsSection using Embla's index-based looping rail, enabled only at 640px and above; a separate mobile track preserves existing touch and centering logic.
+- Prebundle embla-carousel-react at Vite startup alongside the existing React dependencies to prevent late dependency optimization from mixing React module identities during hot updates.
