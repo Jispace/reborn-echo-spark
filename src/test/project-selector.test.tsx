@@ -41,7 +41,9 @@ describe('Project selector navigation', () => {
     for (const expected of [1, 2, 3, 0]) {
       fireEvent.click(view.getByRole('button', { name: 'Projet suivant' }));
       expect(slider.selectedScrollSnap()).toBe(expected);
-      expect(view.getByRole('heading', { level: 3, name: projectsData[expected]?.title })).toBeInTheDocument();
+      const project = projectsData[expected];
+      if (!project) throw new Error('Missing expected project');
+      expect(view.getByRole('heading', { level: 3, name: project.title })).toBeInTheDocument();
     }
     expect(slider.scrollNext).toHaveBeenCalledTimes(4);
     expect(slider.scrollTo).not.toHaveBeenCalled();
@@ -52,7 +54,9 @@ describe('Project selector navigation', () => {
     for (const expected of [3, 2, 1, 0]) {
       fireEvent.click(view.getByRole('button', { name: 'Projet précédent' }));
       expect(slider.selectedScrollSnap()).toBe(expected);
-      expect(view.getByRole('heading', { level: 3, name: projectsData[expected]?.title })).toBeInTheDocument();
+      const project = projectsData[expected];
+      if (!project) throw new Error('Missing expected project');
+      expect(view.getByRole('heading', { level: 3, name: project.title })).toBeInTheDocument();
     }
     expect(slider.scrollPrev).toHaveBeenCalledTimes(4);
   });
