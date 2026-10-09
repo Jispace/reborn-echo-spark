@@ -1,86 +1,79 @@
-import { act, cleanup, fireEvent, render } from '@testing-library/react';
+import { cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProjectsSection } from '@/components/canport/ProjectsSection';
 import { projectsData } from '@/data/portfolioData';
 
-describe('Desktop project selector', () => {
+const slider = vi.hoisted(() => {
+  const listeners = new Set<() => void>();
+  let index = 0;
+  const select = (next: number) => { index = next; listeners.forEach(fn => fn()); };
+  return {
+    reset: () => { index = 0; listeners.clear(); },
+    selectedScrollSnap: () => index,
+    scrollNext: vi.fn(() => select((index + 1) % 4)),
+    scrollPrev: vi.fn(() => select((index + 3) % 4)),
+    scrollTo: vi.fn((next: number) => select(next)),
+    on: (event: string, callback: () => void) => { if (event === 'select') listeners.add(callback); },
+    off: (event: string, callback: () => void) => { if (event === 'select') listeners.delete(callback); },
+  };
+});
+vi.mock('embla-carousel-react', () => ({ default: () => [() => {}, slider] }));
+
+describe('Project selector navigation', () => {
   let desktop = true;
-  let moves: number[];
   beforeEach(() => {
-    vi.useFakeTimers();
-    moves = [];
+    slider.reset();
+    vi.clearAllMocks();
     desktop = true;
     vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
-    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
-      setTimeout(() => callback(Date.now()), 16));
-    vi.stubGlobal('cancelAnimationFrame', clearTimeout);
-    vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+    vi.spyOn(window, 'matchMedia').mockImplementation(query => ({
       matches: query.includes('min-width: 640px') ? desktop
         : query.includes('max-width: 639px') ? !desktop : false,
       media: query, onchange: null, addListener() {}, removeListener() {},
       addEventListener() {}, removeEventListener() {}, dispatchEvent: () => true,
     }));
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
-      const copy = this.dataset['copy'];
-      const index = projectsData.findIndex(p => p.id === this.dataset['projectId']);
-      const left = copy === undefined ? 0 : (Number(copy) * 4 + index) * 300 - (this.parentElement?.scrollLeft ?? 0);
-      return { left, right: left + 300, top: 0, bottom: 48, width: 300, height: 48, x: left, y: 0, toJSON() {} };
-    });
-    Object.defineProperty(HTMLElement.prototype, 'scrollTo', { configurable: true, value(options: ScrollToOptions) {
-      this.scrollLeft = options.left ?? 0;
-      moves.push(this.scrollLeft);
-    } });
     Object.defineProperty(HTMLElement.prototype, 'scrollBy', { configurable: true, value: vi.fn() });
   });
-  afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers(); });
-  const finish = () => act(() => { vi.advanceTimersByTime(400); });
+  afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
-  it('moves one whole project and loops 1 → 2 → 3 → 4 → 1 via copy 2', () => {
+  it('advances exactly one index and synchronizes 1 → 2 → 3 → 4 → 1 immediately', () => {
     const view = render(<ProjectsSection />);
-    expect(moves.at(-1)).toBe(1200);
-    for (const expected of [1500, 1800, 2100]) {
+    for (const expected of [1, 2, 3, 0]) {
       fireEvent.click(view.getByRole('button', { name: 'Projet suivant' }));
-      finish();
-      expect(moves.at(-1)).toBe(expected);
+      expect(slider.selectedScrollSnap()).toBe(expected);
+      expect(view.getByRole('heading', { level: 3, name: projectsData[expected]?.title })).toBeInTheDocument();
     }
-    moves = [];
-    fireEvent.click(view.getByRole('button', { name: 'Projet suivant' }));
-    finish();
-    expect(moves.at(-2)).toBe(2400);
-    expect(moves.at(-1)).toBe(1200);
-    expect(moves.some(left => left > 2100 && left < 2400)).toBe(true);
+    expect(slider.scrollNext).toHaveBeenCalledTimes(4);
+    expect(slider.scrollTo).not.toHaveBeenCalled();
   });
 
-  it('loops 1 → 4 → 3 → 2 → 1 via copy 0', () => {
+  it('reverses exactly one index and loops 1 → 4 → 3 → 2 → 1', () => {
     const view = render(<ProjectsSection />);
-    moves = [];
-    fireEvent.click(view.getByRole('button', { name: 'Projet précédent' }));
-    finish();
-    expect(moves.at(-2)).toBe(900);
-    expect(moves.at(-1)).toBe(2100);
-    expect(moves.some(left => left > 900 && left < 1200)).toBe(true);
-    for (const expected of [1800, 1500, 1200]) {
+    for (const expected of [3, 2, 1, 0]) {
       fireEvent.click(view.getByRole('button', { name: 'Projet précédent' }));
-      finish();
-      expect(moves.at(-1)).toBe(expected);
+      expect(slider.selectedScrollSnap()).toBe(expected);
+      expect(view.getByRole('heading', { level: 3, name: projectsData[expected]?.title })).toBeInTheDocument();
     }
+    expect(slider.scrollPrev).toHaveBeenCalledTimes(4);
   });
 
-  it('aligns a directly selected project with the left edge of the central copy', () => {
+  it('synchronizes direct project selection with the gallery index', () => {
     const view = render(<ProjectsSection />);
     const tab = view.container.querySelector('[data-copy="1"][data-project-id="suivi-taches"]');
     if (!tab) throw new Error('Missing project tab');
     fireEvent.click(tab);
-    finish();
-    expect(moves.at(-1)).toBe(1500);
+    expect(slider.scrollTo).toHaveBeenCalledWith(1, false);
+    expect(slider.selectedScrollSnap()).toBe(1);
   });
 
-  it('does not run desktop scrolling below 640px', () => {
+  it('preserves mobile centering without invoking desktop navigation below 640px', () => {
     desktop = false;
     const view = render(<ProjectsSection />);
-    fireEvent.click(view.getByRole('button', { name: 'Projet suivant' }));
-    finish();
-    expect(moves).toEqual([]);
+    const tab = view.container.querySelector('[data-copy="1"][data-project-id="suivi-taches"]');
+    if (!tab) throw new Error('Missing project tab');
+    fireEvent.click(tab);
+    expect(slider.scrollTo).not.toHaveBeenCalled();
+    expect(slider.scrollNext).not.toHaveBeenCalled();
     expect(HTMLElement.prototype.scrollBy).toHaveBeenCalled();
   });
 });
