@@ -164,7 +164,15 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({ onOpenBooking 
     };
     align(desktopSelectorInitialized.current);
     const onResize = () => align(false);
-    const observer = new ResizeObserver(onResize);
+    const sizeKey = () => `${selector.clientWidth}:${selector.scrollWidth}`;
+    let previousSize = sizeKey();
+    const observer = new ResizeObserver(() => {
+      const nextSize = sizeKey();
+      if (nextSize !== previousSize) {
+        previousSize = nextSize;
+        align(false);
+      }
+    });
     observer.observe(selector);
     selector.querySelectorAll<HTMLElement>('[data-copy="1"]').forEach(tab => observer.observe(tab));
     const initialFrame = requestAnimationFrame(() => {
