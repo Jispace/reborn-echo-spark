@@ -29,6 +29,8 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({ onOpenBooking 
   });
   const [isDetailsOpen, setIsDetailsOpen] = useState<boolean>(false);
   const selectorRef = useRef<HTMLDivElement>(null);
+  const desktopTargetCopy = useRef(1);
+  const desktopSelectorInitialized = useRef(false);
   const [selectorOverflows, setSelectorOverflows] = useState(false);
   const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({});
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
@@ -74,6 +76,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({ onOpenBooking 
     const copyWidth = () => selector.scrollWidth / 3;
 
     const recenter = () => {
+      if (!window.matchMedia('(max-width: 639px)').matches) return;
       const w = copyWidth();
       if (w <= 0) return;
       if (selector.scrollLeft < w * 0.5) {
@@ -84,7 +87,9 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({ onOpenBooking 
     };
 
     // Position initiale au milieu de la copie centrale
-    selector.scrollLeft = copyWidth();
+    if (window.matchMedia('(max-width: 639px)').matches) {
+      selector.scrollLeft = copyWidth();
+    }
 
     let raf = 0;
     const onScroll = () => {
@@ -113,6 +118,61 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({ onOpenBooking 
     });
   }, [activeProjectId]);
 
+  // Desktop only: animate to an exact tab edge, then silently normalize
+  // boundary crossings to the corresponding tab in the central copy.
+  useEffect(() => {
+    const selector = selectorRef.current;
+    if (!selector) return;
+    const desktop = window.matchMedia('(min-width: 640px)');
+    let frame = 0;
+    const tabLeft = (copy: number) => {
+      const tab = selector.querySelector<HTMLElement>(`[data-project-id="${activeProjectId}"][data-copy="${copy}"]`);
+      if (!tab) return null;
+      return selector.scrollLeft + tab.getBoundingClientRect().left
+        - selector.getBoundingClientRect().left - selector.clientLeft;
+    };
+    const align = (animate: boolean) => {
+      cancelAnimationFrame(frame);
+      if (!desktop.matches) {
+        desktopSelectorInitialized.current = false;
+        return;
+      }
+      const target = tabLeft(animate ? desktopTargetCopy.current : 1);
+      if (target === null) return;
+      const normalize = () => {
+        const central = tabLeft(1);
+        if (central !== null) selector.scrollTo({ left: central, behavior: 'instant' });
+        desktopTargetCopy.current = 1;
+      };
+      if (!animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        normalize();
+      } else {
+        const start = selector.scrollLeft;
+        let startedAt: number | undefined;
+        const step = (now: number) => {
+          if (!desktop.matches) return;
+          startedAt ??= now;
+          const progress = Math.min((now - startedAt) / 320, 1);
+          const eased = 1 - (1 - progress) ** 3;
+          selector.scrollTo({ left: start + (target - start) * eased, behavior: 'instant' });
+          if (progress < 1) frame = requestAnimationFrame(step);
+          else normalize();
+        };
+        frame = requestAnimationFrame(step);
+      }
+      desktopSelectorInitialized.current = true;
+    };
+    align(desktopSelectorInitialized.current);
+    const onResize = () => align(false);
+    window.addEventListener('resize', onResize);
+    desktop.addEventListener('change', onResize);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', onResize);
+      desktop.removeEventListener('change', onResize);
+    };
+  }, [activeProjectId]);
+
   const currentProject = projectsData.find((p) => p.id === activeProjectId) || projectsData[0];
   if (!currentProject) return null;
   const activeViewId = activeViewByProject[currentProject.id] ?? currentProject.screenshots[0]?.id ?? '';
@@ -130,6 +190,11 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({ onOpenBooking 
     const currentIndex = projectsData.findIndex((project) => project.id === currentProject.id);
     const nextIndex = (currentIndex + direction + projectsData.length) % projectsData.length;
     const nextProject = projectsData[nextIndex];
+    if (window.matchMedia('(min-width: 640px)').matches) {
+      desktopTargetCopy.current = currentIndex === 0 && direction === -1
+        ? 0
+        : currentIndex === projectsData.length - 1 && direction === 1 ? 2 : 1;
+    }
     if (nextProject) setActiveProjectId(nextProject.id);
   };
 
@@ -169,7 +234,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({ onOpenBooking 
           <Button type="button" variant="outline" size="icon" onClick={() => selectAdjacentProject(-1)} aria-label="Projet précédent" className="hidden sm:inline-flex shrink-0 rounded-full border-[#DED3C5] bg-white text-[#4A3F35] shadow-sm hover:bg-[#F3EDE4]">
             <ChevronLeft />
           </Button>
-          <div ref={selectorRef} className="-mx-4 flex flex-1 items-center justify-start overflow-x-auto px-4 pb-4 gap-2.5 sm:mx-0 sm:snap-x snap-mandatory sm:justify-center sm:px-0 sm:gap-3 scrollbar-none">
+          <div ref={selectorRef} className="-mx-4 flex flex-1 items-center justify-start overflow-x-auto px-4 pb-4 gap-2.5 sm:mx-0 snap-mandatory sm:snap-none sm:justify-start sm:overflow-x-hidden sm:min-w-0 sm:px-0 sm:gap-3 scrollbar-none">
           {[0, 1, 2].flatMap((copy) =>
           projectsData.map((project) => {
             const isSelected = project.id === activeProjectId;
@@ -181,10 +246,15 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({ onOpenBooking 
                 aria-hidden={copy !== 1}
                 tabIndex={copy === 1 ? 0 : -1}
                 type="button"
-                onClick={() => setActiveProjectId(project.id)}
+                onClick={() => {
+                  if (window.matchMedia('(min-width: 640px)').matches) {
+                    desktopTargetCopy.current = 1;
+                  }
+                  setActiveProjectId(project.id);
+                }}
                 className={`flex items-center gap-2 px-4 sm:snap-center sm:px-5 py-3 rounded-2xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer shrink-0 border ${
                   isSelected
-                    ? 'bg-[#2D241E] text-[#FDFBF7] border-[#2D241E] shadow-md scale-[1.02]'
+                    ? 'bg-[#2D241E] text-[#FDFBF7] border-[#2D241E] shadow-md scale-[1.02] sm:scale-100'
                     : 'bg-white/90 text-[#5C4D3E] border-[#E8E1D5] hover:bg-white hover:border-[#D5C7B7]'
                 }`}
               >
