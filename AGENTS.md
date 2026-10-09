@@ -9,4 +9,5 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
-- Keep desktop project-selector animation inside ProjectsSection and gated at 640px; measured tab edges and a desktop-only trailing runway allow three-copy loops without changing mobile touch behavior.
+- Keep the desktop project selector in ProjectsSection using Embla's index-based looping rail, enabled only at 640px and above; a separate mobile track preserves existing touch and centering logic.
+- Prebundle embla-carousel-react at Vite startup alongside the existing React dependencies to prevent late dependency optimization from mixing React module identities during hot updates.
